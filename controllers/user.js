@@ -4,6 +4,8 @@ var bcrypt = require('bcrypt-nodejs');
 var mongoosePaginate = require('mongoose-pagination');
 var User = require('../models/user');
 var jwt = require('../services/jwt');
+var fs = require('fs');
+var path = require('path');
 
 // Prueba a home
 function home(req, res) {
@@ -161,6 +163,44 @@ function updatedUser(req, res) {
     });
 }
 
+// Subir archivos de imagen/avatar de usuario
+function uploadImage(req, res) {
+    var userId = req.params.id;
+
+    if (req.files) {
+        var file_path = req.files.image.path;
+        var file_split = file_path.split('\\');
+        var file_name = file_split[2];
+        var ext_split = file_name.split('\.');
+        var file_ext = ext_split[1];
+
+        if (userId != req.user.sub) {
+            return removeFilesOfUploads(res, file_path, 'No tienes permiso para actualizar los datos del usuario.');
+        }
+
+        if (file_ext == 'png' || file_ext == 'jpg' || file_ext == 'jpeg' || file_ext == 'gif') {
+            // Actualizar documento de usuario logueado
+            User.findByIdAndUpdate(userId, { image: file_name }, { new: true }, (err, userUpdated) => {
+                if (err) return res.status(500).send({ message: 'Error en la petición.' });
+
+                if (!userUpdated) return res.status(404).send({ message: 'No se ha podido actualizar el usuario.' });
+
+                return res.status(200).send({ user: userUpdated });
+            })
+        } else {
+            return removeFilesOfUploads(res, file_path, 'Extensión no válida.');
+        }
+    } else {
+        return res.status(200).send({ message: 'No se han subido imagenes.' });
+    }
+}
+
+function removeFilesOfUploads(res, file_path, message) {
+    fs.unlink(file_path, (err) => {
+        return res.status(200).send({ message: message });
+    });
+}
+
 // Exportacion de metodos
 module.exports = {
     home,
@@ -169,5 +209,6 @@ module.exports = {
     loginUser,
     getUser,
     getUsers,
-    updatedUser
+    updatedUser,
+    uploadImage
 }
