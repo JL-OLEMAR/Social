@@ -132,11 +132,32 @@ function getUsers(req, res) {
 
         if (!users) return res.status(404).send({ message: 'No hy usuarios disponibles.' });
 
-        return res.status(200).send({ 
+        return res.status(200).send({
             users,
             total,
-            pages: Math.ceil(total / itemsPerPage) 
+            pages: Math.ceil(total / itemsPerPage)
         });
+    });
+}
+
+// Edicion de datos de usuarios
+function updatedUser(req, res) {
+    var userId = req.params.id;
+    var update = req.body;
+
+    // Borrar propiedad password
+    delete update.password;
+
+    if (userId != req.user.sub) {
+        return res.status(500).send({ message: 'No tienes permiso para adtualizar los datos del usuario' });
+    }
+
+    User.findByIdAndUpdate(userId, update, { new: true }, (err, userUpdated) => {
+        if (err) return res.status(500).send({ message: 'Error en la petición.' });
+
+        if (!userUpdated) return res.status(404).send({ message: 'No se ha podido actualizar el usuario.' });
+
+        return res.status(200).send({ user: userUpdated });
     });
 }
 
@@ -147,5 +168,6 @@ module.exports = {
     saveUser,
     loginUser,
     getUser,
-    getUsers
+    getUsers,
+    updatedUser
 }
