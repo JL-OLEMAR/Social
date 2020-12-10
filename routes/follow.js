@@ -6,5 +6,6 @@ var api = express.Router();
 var md_auth = require('../middlewares/authenticated');
 
 api.post('/follow', md_auth.ensureAuth, followController.saveFollow);
+api.delete('/follow/:id', md_auth.ensureAuth, followController.deleteFollow);
 
 module.exports = api;
