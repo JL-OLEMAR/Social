@@ -5,6 +5,6 @@ var followController = require('../controllers/follow');
 var api = express.Router();
 var md_auth = require('../middlewares/authenticated');
 
-api.get('/pruebas-follow', md_auth.ensureAuth, followController.prueba);
+api.post('/follow', md_auth.ensureAuth, followController.saveFollow);
 
 module.exports = api;
