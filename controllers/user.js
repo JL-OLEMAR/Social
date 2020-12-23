@@ -236,17 +236,68 @@ function updatedUser(req, res) {
     // Borrar propiedad password
     delete update.password;
 
+    // Solo el propietario puede modificar su perfil
     if (userId != req.user.sub) {
         return res.status(500).send({ message: 'No tienes permiso para adtualizar los datos del usuario' });
     }
 
-    User.findByIdAndUpdate(userId, update, { new: true }, (err, userUpdated) => {
-        if (err) return res.status(500).send({ message: 'Error en la petición.' });
+    // Comprobar si el email es unico
+    if (req.user.email != update.email) {
+        User.findOne({ email: update.email.toLowerCase() }, (err, user) => {
+            if (err) {
+                return res.status(500).send({
+                    message: 'Los datos ya estan en uso.'
+                });
+            }
+            if (user && user.email == update.email) {
+                return res.status(200).send({
+                    message: 'El email ya existen, escoge otro.'
+                });
+            } else {
+                // Buscar y actualizar documento
+                User.findByIdAndUpdate(userId, update, { new: true }, (err, userUpdated) => {
+                    if (err) return res.status(404).send({ message: 'Error en la petición.' });
 
-        if (!userUpdated) return res.status(404).send({ message: 'No se ha podido actualizar el usuario.' });
+                    if (!userUpdated) return res.status(404).send({ message: 'No se ha podido actualizar el usuario.' });
 
-        return res.status(200).send({ user: userUpdated });
-    });
+                    return res.status(200).send({ user: userUpdated });
+                });
+            }
+        });
+    }
+    // Comprobar si el nick es unico
+    else if (req.user.nick != update.nick) {
+        User.findOne({ nick: update.nick.toLowerCase() }, (err, user) => {
+            if (err) {
+                return res.status(500).send({
+                    message: 'Los datos ya estan en uso.'
+                });
+            }
+            if (user && user.nick == update.nick) {
+                return res.status(200).send({
+                    message: 'El nick ya existen, escoge otro.'
+                });
+            } else {
+                // Buscar y actualizar documento
+                User.findByIdAndUpdate(userId, update, { new: true }, (err, userUpdated) => {
+                    if (err) return res.status(404).send({ message: 'Error en la petición.' });
+
+                    if (!userUpdated) return res.status(404).send({ message: 'No se ha podido actualizar el usuario.' });
+
+                    return res.status(200).send({ user: userUpdated });
+                });
+            }
+        });
+    } else {
+        // Buscar y actualizar documento
+        User.findByIdAndUpdate(userId, update, { new: true }, (err, userUpdated) => {
+            if (err) return res.status(500).send({ message: 'Error en la petición.' });
+
+            if (!userUpdated) return res.status(404).send({ message: 'No se ha podido actualizar el usuario.' });
+
+            return res.status(200).send({ user: userUpdated });
+        });
+    }
 }
 
 // Subir archivos de imagen/avatar de usuario
@@ -255,7 +306,7 @@ function uploadImage(req, res) {
 
     if (req.files) {
         var file_path = req.files.image.path;
-        var file_split = file_path.split('\\');
+        var file_split = file_path.split('/');
         var file_name = file_split[2];
         var ext_split = file_name.split('\.');
         var file_ext = ext_split[1];
